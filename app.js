@@ -176,7 +176,7 @@ async function renderAdminUsers() {
     const ownedRouters = routers.filter((router) => router.ownerId === user.id);
     const routerLabels = ownedRouters.length ? ownedRouters.map((router) => esc(router.name)).join(', ') : 'Aucun routeur lié';
     return `<tr><td class="cell-strong">${esc(user.name)}</td><td>${esc(user.email)}</td><td>${esc(user.phone || '—')}</td><td>${statusBadge(user.role)}</td><td>${routerLabels}</td><td>${statusBadge(user.emailVerifiedAt ? 'VERIFIED' : 'EMAIL PENDING')} ${statusBadge(user.phoneVerifiedAt ? 'PHONE OK' : 'PHONE PENDING')}</td><td>${date(user.createdAt)}</td><td><div class="inline-actions"><button class="small-button" data-client-routers="${esc(user.id)}" data-user-name="${esc(user.name)}">Gérer routeurs (${ownedRouters.length})</button><button class="small-button" data-wallet-user="${esc(user.id)}" data-user-name="${esc(user.name)}">Portefeuille</button><button class="small-button" data-role-id="${esc(user.id)}" data-role="${user.role === 'ADMIN' ? 'USER' : 'ADMIN'}">${user.role === 'ADMIN' ? 'Rétrograder' : 'Promouvoir admin'}</button></div></td></tr>`;
-  }).join('');
+  });
   $('#page-content').innerHTML = heading('Clients', 'Chaque client doit avoir ses routeurs attribués; les forfaits se règlent ensuite routeur par routeur.', '<button class="button primary" data-action="new-client">+ Créer un client</button>') + card('Comptes et routeurs attribués', table(['NOM', 'EMAIL', 'TÉLÉPHONE', 'RÔLE', 'ROUTEURS', 'VÉRIFICATIONS', 'INSCRIPTION', 'ACTIONS'], rows));
 }
 
@@ -316,8 +316,8 @@ async function openClientRouters(userId, userName) {
         action = `<span class="muted">Attribué à ${esc(ownerName)}</span>`;
       }
       return `<tr><td class="cell-strong">${esc(router.name)}</td><td>${esc(router.code)}</td><td>${router.ownerId === userId ? statusBadge('LIÉ') : router.ownerId ? esc(ownerName) : 'Disponible'}</td><td>${action}</td></tr>`;
-    }).join('');
-    const content = rows ? table(['ROUTEUR', 'CODE HOTSPOT', 'ATTRIBUTION', 'ACTIONS'], rows) : empty('Aucun routeur enregistré.');
+    });
+    const content = rows.length ? table(['ROUTEUR', 'CODE HOTSPOT', 'ATTRIBUTION', 'ACTIONS'], rows) : empty('Aucun routeur enregistré.');
     modal(`Routeurs · ${esc(userName)}`, `<div class="info-box">Attribue ici les MikroTik de ce client. « Forfaits » règle ensuite les offres activées sur chaque routeur.</div><div style="height:14px"></div>${content}<div class="form-actions"><button class="button secondary" type="button" data-close-modal>Fermer</button></div>`);
   } catch (error) { toast(error.message, true); }
 }
