@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#0c1730" />
+    <meta name="description" content="Meneckdem WiFi — administration et espace client" />
+    <title>Meneckdem WiFi</title>
+    <link rel="stylesheet" href="styles.css" />
+    <link rel="stylesheet" href="auth.css" />
+    <script src="app.js" defer></script>
+  </head>
+  <body>
+    <div id="toast" class="toast" role="status" aria-live="polite"></div>
+    <main id="login-screen" class="login-screen">
+      <section class="login-card">
+        <div class="brand-mark">MW</div>
+        <p class="eyebrow">MENECKDEM WIFI</p>
+        <h1>Votre réseau,<br /><span>en un seul endroit.</span></h1>
+        <p class="muted">Connectez-vous à votre espace administrateur ou client.</p>
+        <form id="login-form" class="stack">
+          <label>Adresse de l’API Render
+            <input id="api-url" type="url" placeholder="https://votre-api.onrender.com" required />
+          </label>
+          <label>Adresse email
+            <input name="email" type="email" autocomplete="username" required />
+          </label>
+          <label>Mot de passe
+            <input name="password" type="password" autocomplete="current-password" required />
+          </label>
+          <button class="button primary wide" type="submit">Se connecter <span>→</span></button>
+        </form>
+        <div class="login-links"><button type="button" id="show-register">Créer un compte client</button><button type="button" id="show-reset">Mot de passe oublié ?</button></div>
+        <div id="auth-extra"></div>
+        <p class="login-foot">Vos routeurs et forfaits restent gérés par le backend existant.</p>
+      </section>
+      <aside class="login-aside">
+        <div class="orb orb-one"></div><div class="orb orb-two"></div>
+        <div class="aside-content">
+          <span class="status-pill"><i></i> PLATEFORME WIFI</span>
+          <h2>Simple à gérer.<br />Prête à grandir.</h2>
+          <p>Routeurs, forfaits, tickets et suivi financier dans la même interface.</p>
+          <div class="mini-stats"><div><b>01</b><span>Connectez-vous</span></div><div><b>02</b><span>Gérez votre réseau</span></div><div><b>03</b><span>Suivez l’activité</span></div></div>
+        </div>
+        <span class="aside-caption">MENECKDEM WIFI · GESTION HOTSPOT</span>
+      </aside>
+    </main>
+
+    <div id="application" class="application hidden">
+      <aside class="sidebar" id="sidebar">
+        <a class="brand" href="#"><span class="brand-mark small">MW</span><span><b>MENECKDEM</b><small>WIFI PLATFORM</small></span></a>
+        <div class="workspace-label">ESPACE <span id="role-label">CLIENT</span></div>
+        <nav id="navigation" class="navigation"></nav>
+        <div class="sidebar-bottom">
+          <div class="user-chip"><div class="avatar" id="avatar">M</div><div class="user-meta"><b id="user-name">Utilisateur</b><small id="user-email"></small></div></div>
+          <button id="logout-button" class="logout-button"><span>↪</span> Déconnexion</button>
+        </div>
+      </aside>
+      <section class="main-column">
+        <header class="topbar">
+          <button id="menu-button" class="icon-button menu-button" aria-label="Ouvrir le menu">☰</button>
+          <div class="breadcrumb"><span>ESPACE DE GESTION</span><b id="page-title">Vue d’ensemble</b></div>
+          <div class="top-actions"><span class="online-dot"></span><span class="live-label">API connectée</span><button id="refresh-button" class="icon-button" title="Actualiser">↻</button></div>
+        </header>
+        <main id="page-content" class="page-content"></main>
+        <footer class="page-footer">Meneckdem WiFi <span>·</span> Gestion sécurisée de votre réseau</footer>
+      </section>
+    </div>
+    <div id="modal-root"></div>
+  </body>
+</html>
