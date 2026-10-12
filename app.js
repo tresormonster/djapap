@@ -40,8 +40,8 @@ function logout(showToast = true) {
 }
 
 async function login(event) {
-  event.preventDefault(); const form = new FormData(event.currentTarget);
-  const submit = $('button[type="submit"]', event.currentTarget); submit.disabled = true; submit.textContent = 'Connexion…';
+  event.preventDefault(); const form = new FormData(event.target);
+  const submit = $('button[type="submit"]', event.target); submit.disabled = true; submit.textContent = 'Connexion…';
   try {
     const result = await request('/auth/login', { method: 'POST', body: JSON.stringify({ email: form.get('email'), password: form.get('password') }) });
     state.token = result.access_token; localStorage.setItem(STORE.token, state.token);
@@ -67,14 +67,14 @@ function showPasswordReset(email = '') {
 }
 
 async function registerAccount(event) {
-  event.preventDefault(); const data = Object.fromEntries(new FormData(event.currentTarget));
+  event.preventDefault(); const data = Object.fromEntries(new FormData(event.target));
   try { const result = await request('/auth/register', { method: 'POST', body: JSON.stringify(data) }); toast(result.message || 'Compte créé.'); showVerification(data.email); }
   catch (error) { toast(error.message, true); }
 }
 
 async function confirmVerification(event) {
   event.preventDefault(); const channel = event.submitter?.dataset.channel; if (!channel) return;
-  const data = Object.fromEntries(new FormData(event.currentTarget)); const code = channel === 'email' ? data.emailCode : data.phoneCode;
+  const data = Object.fromEntries(new FormData(event.target)); const code = channel === 'email' ? data.emailCode : data.phoneCode;
   try { const result = await request(`/auth/verify/${channel}`, { method: 'POST', body: JSON.stringify({ email: data.email, code }) }); toast(result.message || `Adresse ${channel === 'email' ? 'email' : 'téléphone'} confirmée.`); }
   catch (error) { toast(error.message, true); }
 }
@@ -300,7 +300,7 @@ function newRouterModal(isAdmin) {
 }
 
 async function createOffer(event) {
-  event.preventDefault(); const data = Object.fromEntries(new FormData(event.currentTarget));
+  event.preventDefault(); const data = Object.fromEntries(new FormData(event.target));
   for (const key of ['code', 'price', 'durationMinutes', 'dataLimitMb', 'downloadLimitKbps', 'uploadLimitKbps', 'sharedUsers']) data[key] = data[key] === '' || data[key] == null ? undefined : Number(data[key]);
   data.active = true;
   try { await request('/offers', { method: 'POST', body: JSON.stringify(data) }); $('#modal-root').innerHTML = ''; toast('Forfait créé.'); loadPage('offers'); }
@@ -308,7 +308,7 @@ async function createOffer(event) {
 }
 
 async function createRouter(event) {
-  event.preventDefault(); const data = Object.fromEntries(new FormData(event.currentTarget));
+  event.preventDefault(); const data = Object.fromEntries(new FormData(event.target));
   data.apiPort = Number(data.apiPort); if (!data.location) delete data.location; if (!data.ownerId) delete data.ownerId;
   const route = state.role === 'ADMIN' ? '/routers' : '/routers/my';
   try { await request(route, { method: 'POST', body: JSON.stringify(data) }); $('#modal-root').innerHTML = ''; toast('Routeur enregistré.'); loadPage('routers'); }
@@ -316,7 +316,7 @@ async function createRouter(event) {
 }
 
 async function createClient(event) {
-  event.preventDefault(); const data = Object.fromEntries(new FormData(event.currentTarget));
+  event.preventDefault(); const data = Object.fromEntries(new FormData(event.target));
   try {
     const result = await request('/auth/register', { method: 'POST', body: JSON.stringify(data) });
     $('#modal-root').innerHTML = ''; toast(result.message || 'Compte client créé; les vérifications restent à confirmer.'); loadPage('users');
@@ -324,7 +324,7 @@ async function createClient(event) {
 }
 
 async function adjustWallet(event) {
-  event.preventDefault(); const data = Object.fromEntries(new FormData(event.currentTarget));
+  event.preventDefault(); const data = Object.fromEntries(new FormData(event.target));
   data.amount = Number(data.amount); data.idempotencyKey = crypto.randomUUID();
   if (!data.reference) data.reference = `ADMIN-${Date.now()}`;
   try {
