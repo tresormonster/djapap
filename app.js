@@ -1,10 +1,11 @@
-const STORE = { api: 'meneckdem.api', token: 'meneckdem.token' };
-const state = { token: localStorage.getItem(STORE.token), api: localStorage.getItem(STORE.api) || '', user: null, role: null, page: 'overview', routers: [], selectedRouter: null };
+const API_BASE_URL = 'https://wifi-backend-y5v6.onrender.com';
+const STORE = { token: 'meneckdem.token' };
+const state = { token: localStorage.getItem(STORE.token), user: null, role: null, page: 'overview', routers: [], selectedRouter: null };
 const $ = (selector, root = document) => root.querySelector(selector);
 const esc = (value) => String(value ?? '').replace(/[&<>"']/g, (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[char]);
 const money = (value) => `${new Intl.NumberFormat('fr-FR').format(Number(value) || 0)} FCFA`;
 const listOf = (value) => Array.isArray(value) ? value : Array.isArray(value?.data) ? value.data : Array.isArray(value?.items) ? value.items : Array.isArray(value?.users) ? value.users : [];
-const endpoint = (path) => `${state.api.replace(/\/+$/, '')}${path.startsWith('/') ? path : `/${path}`}`;
+const endpoint = (path) => `${API_BASE_URL}${path.startsWith('/') ? path : `/${path}`}`;
 
 function toast(message, error = false) {
   const el = $('#toast'); el.textContent = message; el.className = `toast show${error ? ' error' : ''}`;
@@ -40,9 +41,6 @@ function logout(showToast = true) {
 
 async function login(event) {
   event.preventDefault(); const form = new FormData(event.currentTarget);
-  const base = $('#api-url').value.trim().replace(/\/+$/, '');
-  if (!/^https?:\/\//i.test(base)) return toast('Saisis l’adresse complète de l’API, avec https://.', true);
-  state.api = base; localStorage.setItem(STORE.api, base);
   const submit = $('button[type="submit"]', event.currentTarget); submit.disabled = true; submit.textContent = 'Connexion…';
   try {
     const result = await request('/auth/login', { method: 'POST', body: JSON.stringify({ email: form.get('email'), password: form.get('password') }) });
@@ -423,9 +421,7 @@ document.addEventListener('click', async (event) => {
   }
 });
 
-$('#api-url').value = state.api;
-
-if (state.token && state.api) {
+if (state.token) {
   const claims = decodeToken(state.token); state.role = claims.role;
   loadProfile().then(() => { if (!state.role) state.role = state.user?.role; if (['ADMIN', 'USER'].includes(state.role)) startApp(); else logout(false); }).catch(() => logout(false));
 }
