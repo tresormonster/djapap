@@ -1,6 +1,6 @@
 const API_BASE_URL = 'https://wifi-backend-y5v6.onrender.com';
 const STORE = { token: 'meneckdem.token' };
-const state = { token: localStorage.getItem(STORE.token), user: null, role: null, page: 'overview', routers: [], selectedRouter: null };
+const state = { token: localStorage.getItem(STORE.token), user: null, role: null, page: 'overview', routers: [], adminUsers: [], selectedRouter: null };
 const $ = (selector, root = document) => root.querySelector(selector);
 const esc = (value) => String(value ?? '').replace(/[&<>"']/g, (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[char]);
 const money = (value) => `${new Intl.NumberFormat('fr-FR').format(Number(value) || 0)} FCFA`;
@@ -170,15 +170,22 @@ async function renderAdmin(page) {
 }
 
 async function renderAdminUsers() {
-  const result = await request('/users?page=1&pageSize=100'); const users = listOf(result);
-  const rows = users.map((user) => `<tr><td class="cell-strong">${esc(user.name)}</td><td>${esc(user.email)}</td><td>${esc(user.phone || '—')}</td><td>${statusBadge(user.role)}</td><td>${statusBadge(user.emailVerifiedAt ? 'VERIFIED' : 'EMAIL PENDING')} ${statusBadge(user.phoneVerifiedAt ? 'PHONE OK' : 'PHONE PENDING')}</td><td>${date(user.createdAt)}</td><td><div class="inline-actions"><button class="small-button" data-wallet-user="${esc(user.id)}" data-user-name="${esc(user.name)}">Portefeuille</button><button class="small-button" data-role-id="${esc(user.id)}" data-role="${user.role === 'ADMIN' ? 'USER' : 'ADMIN'}">${user.role === 'ADMIN' ? 'Rétrograder' : 'Promouvoir admin'}</button></div></td></tr>`);
-  $('#page-content').innerHTML = heading('Clients', 'Crée et gère les comptes utilisateurs de la plateforme.', '<button class="button primary" data-action="new-client">+ Créer un client</button>') + card('Comptes enregistrés', table(['NOM', 'EMAIL', 'TÉLÉPHONE', 'RÔLE', 'VÉRIFICATIONS', 'INSCRIPTION', 'ACTIONS'], rows));
+  const [result, routerResult] = await Promise.all([request('/users?page=1&pageSize=100'), request('/routers')]);
+  const users = listOf(result); const routers = listOf(routerResult); state.adminUsers = users; state.routers = routers;
+  const rows = users.map((user) => {
+    const ownedRouters = routers.filter((router) => router.ownerId === user.id);
+    const routerLabels = ownedRouters.length ? ownedRouters.map((router) => esc(router.name)).join(', ') : 'Aucun routeur lié';
+    return `<tr><td class="cell-strong">${esc(user.name)}</td><td>${esc(user.email)}</td><td>${esc(user.phone || '—')}</td><td>${statusBadge(user.role)}</td><td>${routerLabels}</td><td>${statusBadge(user.emailVerifiedAt ? 'VERIFIED' : 'EMAIL PENDING')} ${statusBadge(user.phoneVerifiedAt ? 'PHONE OK' : 'PHONE PENDING')}</td><td>${date(user.createdAt)}</td><td><div class="inline-actions"><button class="small-button" data-client-routers="${esc(user.id)}" data-user-name="${esc(user.name)}">Gérer routeurs (${ownedRouters.length})</button><button class="small-button" data-wallet-user="${esc(user.id)}" data-user-name="${esc(user.name)}">Portefeuille</button><button class="small-button" data-role-id="${esc(user.id)}" data-role="${user.role === 'ADMIN' ? 'USER' : 'ADMIN'}">${user.role === 'ADMIN' ? 'Rétrograder' : 'Promouvoir admin'}</button></div></td></tr>`;
+  }).join('');
+  $('#page-content').innerHTML = heading('Clients', 'Chaque client doit avoir ses routeurs attribués; les forfaits se règlent ensuite routeur par routeur.', '<button class="button primary" data-action="new-client">+ Créer un client</button>') + card('Comptes et routeurs attribués', table(['NOM', 'EMAIL', 'TÉLÉPHONE', 'RÔLE', 'ROUTEURS', 'VÉRIFICATIONS', 'INSCRIPTION', 'ACTIONS'], rows));
 }
 
 async function renderAdminRouters() {
-  const routers = listOf(await request('/routers')); state.routers = routers;
-  const rows = routers.map((router) => `<tr><td class="cell-strong">${esc(router.name)}</td><td>${esc(router.code)}</td><td>${esc(router.ipAddress)}</td><td>${esc(router.location || '—')}</td><td>${statusBadge(router.active === false ? 'INACTIVE' : 'ACTIVE')}</td><td><div class="inline-actions"><button class="small-button" data-admin-router-offers="${esc(router.id)}">Forfaits</button><button class="small-button" data-router-portal="${esc(router.id)}">Portail</button></div></td></tr>`);
-  $('#page-content').innerHTML = heading('Routeurs', 'Routeurs MikroTik enregistrés et état de configuration.', '<button class="button primary" data-action="new-router">+ Ajouter un routeur</button>') + card('Tous les routeurs', table(['NOM', 'CODE', 'ADRESSE IP', 'EMPLACEMENT', 'ÉTAT', 'GESTION'], rows), '', `${routers.length} routeur(s)`);
+  const [routerResult, userResult] = await Promise.all([request('/routers'), request('/users?page=1&pageSize=100')]);
+  const routers = listOf(routerResult); state.routers = routers; state.adminUsers = listOf(userResult);
+  const userNames = new Map(state.adminUsers.map((user) => [user.id, user.name]));
+  const rows = routers.map((router) => `<tr><td class="cell-strong">${esc(router.name)}</td><td>${esc(router.code)}</td><td>${esc(router.ipAddress)}</td><td>${esc(router.location || '—')}</td><td>${router.ownerId ? esc(userNames.get(router.ownerId) || 'Client') : 'Non attribué'}</td><td>${statusBadge(router.active === false ? 'INACTIVE' : 'ACTIVE')}</td><td><div class="inline-actions"><button class="small-button" data-admin-router-offers="${esc(router.id)}">Forfaits</button><button class="small-button" data-router-portal="${esc(router.id)}">Portail</button></div></td></tr>`);
+  $('#page-content').innerHTML = heading('Routeurs', 'Attribue chaque MikroTik à son client, puis règle les forfaits disponibles sur ce routeur.', '<button class="button primary" data-action="new-router">+ Ajouter un routeur</button>') + card('Routeurs et propriétaires', table(['NOM', 'CODE', 'ADRESSE IP', 'EMPLACEMENT', 'CLIENT LIÉ', 'ÉTAT', 'GESTION'], rows), '', `${routers.length} routeur(s)`);
 }
 
 async function renderAdminRouterOffers() {
@@ -295,6 +302,26 @@ async function openAdminWallet(userId, userName) {
   } catch (error) { toast(error.message, true); }
 }
 
+async function openClientRouters(userId, userName) {
+  try {
+    const routers = listOf(await request('/routers')); state.routers = routers;
+    const rows = routers.map((router) => {
+      const ownerName = state.adminUsers.find((user) => user.id === router.ownerId)?.name || 'Autre client';
+      let action;
+      if (router.ownerId === userId) {
+        action = `<div class="inline-actions"><button class="small-button" data-admin-router-offers="${esc(router.id)}">Forfaits</button><button class="small-button warn" data-detach-client-router="${esc(router.id)}" data-client-id="${esc(userId)}" data-user-name="${esc(userName)}">Délier</button></div>`;
+      } else if (!router.ownerId) {
+        action = `<button class="small-button" data-attach-client-router="${esc(router.id)}" data-client-id="${esc(userId)}" data-user-name="${esc(userName)}">Attribuer</button>`;
+      } else {
+        action = `<span class="muted">Attribué à ${esc(ownerName)}</span>`;
+      }
+      return `<tr><td class="cell-strong">${esc(router.name)}</td><td>${esc(router.code)}</td><td>${router.ownerId === userId ? statusBadge('LIÉ') : router.ownerId ? esc(ownerName) : 'Disponible'}</td><td>${action}</td></tr>`;
+    }).join('');
+    const content = rows ? table(['ROUTEUR', 'CODE HOTSPOT', 'ATTRIBUTION', 'ACTIONS'], rows) : empty('Aucun routeur enregistré.');
+    modal(`Routeurs · ${esc(userName)}`, `<div class="info-box">Attribue ici les MikroTik de ce client. « Forfaits » règle ensuite les offres activées sur chaque routeur.</div><div style="height:14px"></div>${content}<div class="form-actions"><button class="button secondary" type="button" data-close-modal>Fermer</button></div>`);
+  } catch (error) { toast(error.message, true); }
+}
+
 function newRouterModal(isAdmin) {
   modal(isAdmin ? 'Ajouter un routeur' : 'Enregistrer un routeur', `<form id="router-form" class="form-grid"><label class="field">Nom du routeur<input name="name" required placeholder="Boutique centre"></label><label class="field">Code HotSpot<input name="code" required placeholder="WIFI-CENTRE"></label><label class="field">Adresse IP<input name="ipAddress" required placeholder="192.168.88.1"></label><label class="field">Port API<input name="apiPort" type="number" min="1" value="8728" required></label><label class="field">Identifiant RouterOS<input name="username" required></label><label class="field">Mot de passe RouterOS<input name="password" type="password" required></label><label class="field full">Emplacement<input name="location" placeholder="Ville, quartier…"></label>${isAdmin ? '<label class="field full">ID du propriétaire (facultatif)<input name="ownerId" placeholder="UUID client"></label>' : ''}<div class="info-box full">Vérifie l’IP, le port API et les identifiants RouterOS avant l’enregistrement.</div><div class="form-actions full"><button class="button secondary" type="button" data-close-modal>Annuler</button><button class="button primary" type="submit">Enregistrer</button></div></form>`);
 }
@@ -386,9 +413,22 @@ document.addEventListener('click', async (event) => {
   if (button.dataset.action === 'new-offer') return newOfferModal();
   if (button.dataset.action === 'new-router') return newRouterModal(state.role === 'ADMIN');
   if (button.dataset.action === 'new-client') return newClientModal();
+  if (button.dataset.clientRouters) return openClientRouters(button.dataset.clientRouters, button.dataset.userName || 'Client');
+  if (button.dataset.attachClientRouter || button.dataset.detachClientRouter) {
+    const routerId = button.dataset.attachClientRouter || button.dataset.detachClientRouter;
+    const clientId = button.dataset.clientId; const userName = button.dataset.userName || 'Client';
+    const ownerId = button.dataset.attachClientRouter ? clientId : null;
+    try {
+      await request(`/routers/${encodeURIComponent(routerId)}`, { method: 'PATCH', body: JSON.stringify({ ownerId }) });
+      toast(ownerId ? 'Routeur attribué au client.' : 'Routeur retiré du client.');
+      await loadPage('users');
+      return openClientRouters(clientId, userName);
+    } catch (error) { toast(error.message, true); }
+    return;
+  }
   if (button.dataset.walletUser) return openAdminWallet(button.dataset.walletUser, button.dataset.userName || 'Client');
   if (button.dataset.walletAdjustUser) { $('#modal-root').innerHTML = ''; return walletAdjustmentModal(button.dataset.walletAdjustUser, button.dataset.userName || 'Client'); }
-  if (button.dataset.adminRouterOffers) { state.selectedRouter = button.dataset.adminRouterOffers; return loadPage('router-offers'); }
+  if (button.dataset.adminRouterOffers) { $('#modal-root').innerHTML = ''; state.selectedRouter = button.dataset.adminRouterOffers; return loadPage('router-offers'); }
   if (button.dataset.downloadPortal) return downloadPortal(button.dataset.downloadPortal);
   if (button.dataset.routerPortal) { state.selectedRouter = button.dataset.routerPortal; return loadPage('portal'); }
   if (button.dataset.routerOffers) { state.selectedRouter = button.dataset.routerOffers; return loadPage('offers'); }
