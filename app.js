@@ -284,7 +284,7 @@ function newOfferModal() {
 }
 
 function newClientModal() {
-  modal('Créer un compte client', `<form id="client-form" class="form-grid"><label class="field">Nom complet<input name="name" required minlength="2"></label><label class="field">Email<input name="email" type="email" required></label><label class="field">Téléphone<input name="phone" type="tel" placeholder="+237…" required></label><label class="field">Mot de passe provisoire<input name="password" type="password" minlength="8" required></label><div class="info-box full">Le compte sera créé avec le rôle USER. Le client devra confirmer son email et son téléphone avec les codes envoyés avant de pouvoir se connecter.</div><div class="form-actions full"><button class="button secondary" type="button" data-close-modal>Annuler</button><button class="button primary" type="submit">Créer le compte</button></div></form>`);
+  modal('Créer un compte client', `<form id="client-form" class="form-grid"><label class="field">Nom complet<input name="name" required minlength="2"></label><label class="field">Email<input name="email" type="email" required></label><label class="field">Téléphone<input name="phone" type="tel" placeholder="+237…" required></label><label class="field">Mot de passe provisoire<input name="password" type="password" minlength="8" required></label><div class="info-box full">Compte USER verifie a la creation par admin. Le client peut se connecter sans code de validation.</div><div class="form-actions full"><button class="button secondary" type="button" data-close-modal>Annuler</button><button class="button primary" type="submit">Créer le compte</button></div></form>`);
 }
 
 function walletAdjustmentModal(userId, userName) {
@@ -345,8 +345,8 @@ async function createRouter(event) {
 async function createClient(event) {
   event.preventDefault(); const data = Object.fromEntries(new FormData(event.target));
   try {
-    const result = await request('/auth/register', { method: 'POST', body: JSON.stringify(data) });
-    $('#modal-root').innerHTML = ''; toast(result.message || 'Compte client créé; les vérifications restent à confirmer.'); loadPage('users');
+    const result = await request('/users', { method: 'POST', body: JSON.stringify(data) });
+    $('#modal-root').innerHTML = ''; toast('Compte client cree, il peut se connecter.'); loadPage('users');
   } catch (error) { toast(error.message, true); }
 }
 

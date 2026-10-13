@@ -1,4 +1,4 @@
-﻿# Meneckdem WiFi interface
+# Meneckdem WiFi interface
 
 Interface statique en HTML, CSS et JavaScript pour les espaces administrateur et client.
 
@@ -11,4 +11,4 @@ Interface statique en HTML, CSS et JavaScript pour les espaces administrateur et
 5. Si l’adresse de l’API change, modifier `API_BASE_URL` puis redéployer le site.
 6. Ajouter l’origine exacte du domaine Vercel dans `CORS_ORIGINS` sur Render pour autoriser les appels du navigateur.
 
-Le tableau de bord admin et le tableau de bord client partagent cette interface. Le rôle du compte connecté détermine les pages disponibles. Les comptes clients créés par l’admin doivent confirmer leur email et leur téléphone avant leur première connexion.
+Le tableau de bord admin et celui du client partagent cette interface. Les comptes crees par l admin sont verifies a la creation; les inscriptions publiques conservent la confirmation par email et telephone.
