@@ -91,6 +91,7 @@ const ADMIN_NAV = [
   { id: 'overview', label: 'Vue d’ensemble', icon: '◫' },
   { id: 'users', label: 'Clients', icon: '♙' },
   { id: 'routers', label: 'Routeurs', icon: '⌁' },
+  { id: 'portal', label: 'Portails captifs', icon: 'P' },
   { id: 'offers', label: 'Forfaits', icon: '▤' },
   { id: 'finances', label: 'Finances', icon: '◈' },
 ];
@@ -167,6 +168,7 @@ async function renderAdmin(page) {
   if (page === 'offers') return renderAdminOffers();
   if (page === 'finances') return renderAdminFinances();
   if (page === 'router-offers') return renderAdminRouterOffers();
+  if (page === 'portal') return renderPortal();
 }
 
 async function renderAdminUsers() {
@@ -236,7 +238,7 @@ async function renderUser(page) {
   if (page === 'routers') return renderUserRouters();
   if (page === 'offers') return renderUserOffers();
   if (page === 'wallet') return renderUserWallet();
-  if (page === 'portal') return renderUserPortal();
+  if (page === 'portal') return renderPortal();
 }
 
 function routerTile(router) {
@@ -266,8 +268,11 @@ async function renderUserWallet() {
   $('#page-content').innerHTML = heading('Portefeuille', 'Consulte ton solde et l’historique des mouvements.') + `<div class="grid stats-grid">${stat('SOLDE DISPONIBLE', money(wallet.balance ?? wallet.availableBalance ?? 0), '◈')}${stat('OPÉRATIONS', transactions.length, '▤', 'Dernières transactions')}</div>` + card('Historique du portefeuille', table(['DATE', 'OPÉRATION', 'TYPE', 'MONTANT', 'ÉTAT'], rows)) + `<div class="info-box">Les dépôts et retraits doivent être confirmés par les services de paiement configurés. Pour l’instant, contacte l’administrateur pour toute opération financière.</div>`;
 }
 
-async function renderUserPortal() {
-  if (!state.routers.length) state.routers = listOf(await request('/routers/my'));
+async function renderPortal() {
+  if (!state.routers.length) {
+    const route = state.role === 'ADMIN' ? '/routers' : '/routers/my';
+    state.routers = listOf(await request(route));
+  }
   if (!state.selectedRouter && state.routers.length) state.selectedRouter = state.routers[0].id;
   if (!state.selectedRouter) { $('#page-content').innerHTML = heading('Portail captif', 'Personnalise le portail HotSpot de ton routeur.') + card('Routeur requis', empty('Enregistre d’abord un routeur pour personnaliser son portail.')); return; }
   const router = state.routers.find((item) => item.id === state.selectedRouter);
