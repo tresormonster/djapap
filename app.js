@@ -184,7 +184,7 @@ async function renderAdminSettings() {
   }).join('');
   $('#page-content').innerHTML =
     heading('Paramètres', 'Choisis le fournisseur prioritaire et règle la commission de la plateforme.') +
-    card('Fournisseur de paiement prioritaire', '<div class="grid two-column">' + providerCards + '</div><div class="info-box" style="margin-top:16px">Le fournisseur choisi est essayé en premier. Un autre fournisseur configuré peut servir de secours. GeniusPay ne traite que les forfaits de 200 FCFA ou plus.</div>') +
+    card('Fournisseur de paiement sélectionné', '<div class="grid two-column">' + providerCards + '</div><div class="info-box" style="margin-top:16px">Seul le fournisseur choisi est utilise. En cas de refus ou panne, le paiement echoue sans basculement automatique. GeniusPay exige un montant minimum de 200 FCFA.</div>') +
     card('Commission plateforme', '<form id="platform-fee-form" class="form-grid"><label class="field">Pourcentage prélevé sur les nouveaux paiements<input name="platformFeePercent" type="number" min="0" max="100" step="0.01" value="' + esc(settings.platformFeePercent) + '" required></label><div class="form-actions"><button class="button primary" type="submit">Enregistrer le pourcentage</button></div></form><div class="muted" style="margin-top:12px">Le taux enregistré est figé sur chaque paiement créé. Les anciens paiements ne changent pas.</div><div class="info-box" style="margin-top:12px">Les reversements des paiements GeniusPay restent à traiter manuellement dans l’état actuel.</div>');
 }
 
