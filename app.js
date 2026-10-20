@@ -94,6 +94,7 @@ const ADMIN_NAV = [
   { id: 'portal', label: 'Portails captifs', icon: 'P' },
   { id: 'offers', label: 'Forfaits', icon: '▤' },
   { id: 'finances', label: 'Finances', icon: '◈' },
+  { id: 'settings', label: 'Paramètres', icon: '⚙' },
 ];
 const USER_NAV = [
   { id: 'overview', label: 'Vue d’ensemble', icon: '◫' },
@@ -117,7 +118,7 @@ function renderNav() {
   $('#navigation').innerHTML = items.map((item) => `<button class="nav-item ${state.page === item.id ? 'active' : ''}" data-page="${item.id}"><span class="nav-icon">${item.icon}</span>${item.label}</button>`).join('');
 }
 
-const PAGE_NAMES = { overview: 'Vue d’ensemble', users: 'Clients', routers: 'Routeurs', offers: 'Forfaits', finances: 'Finances', wallet: 'Portefeuille', portal: 'Portail captif', 'router-offers': 'Forfaits du routeur' };
+const PAGE_NAMES = { overview: 'Vue d’ensemble', users: 'Clients', routers: 'Routeurs', offers: 'Forfaits', finances: 'Finances', settings: 'Paramètres', wallet: 'Portefeuille', portal: 'Portail captif', 'router-offers': 'Forfaits du routeur' };
 function heading(title, description, action = '') {
   return `<div class="page-heading"><div><h1>${title}</h1><p>${description}</p></div><div class="heading-actions">${action}</div></div>`;
 }
@@ -167,8 +168,24 @@ async function renderAdmin(page) {
   if (page === 'routers') return renderAdminRouters();
   if (page === 'offers') return renderAdminOffers();
   if (page === 'finances') return renderAdminFinances();
+  if (page === 'settings') return renderAdminSettings();
   if (page === 'router-offers') return renderAdminRouterOffers();
   if (page === 'portal') return renderPortal();
+}
+
+async function renderAdminSettings() {
+  const settings = await request('/payments/admin/settings');
+  const providers = settings.paymentProviders || {};
+  const choices = [['SHAREPAY', 'SharePay'], ['GENIUSPAY', 'GeniusPay']];
+  const providerCards = choices.map(([key, label]) => {
+    const selected = settings.preferredPaymentProvider === key;
+    const configured = providers[key] === true;
+    return '<button type="button" class="card" data-provider-choice="' + key + '" aria-pressed="' + selected + '" style="text-align:left;border:2px solid ' + (selected ? 'var(--blue)' : 'var(--line)') + ';background:' + (selected ? 'var(--blue-soft)' : '#fff') + ';padding:20px;cursor:pointer"><strong>' + label + ' ' + (selected ? '✓ Prioritaire' : '') + '</strong><div class="muted" style="margin-top:8px">' + (configured ? 'Clé API configurée' : 'Clé API manquante dans Render') + '</div></button>';
+  }).join('');
+  $('#page-content').innerHTML =
+    heading('Paramètres', 'Choisis le fournisseur prioritaire et règle la commission de la plateforme.') +
+    card('Fournisseur de paiement prioritaire', '<div class="grid two-column">' + providerCards + '</div><div class="info-box" style="margin-top:16px">Le fournisseur choisi est essayé en premier. Un autre fournisseur configuré peut servir de secours. GeniusPay ne traite que les forfaits de 200 FCFA ou plus.</div>') +
+    card('Commission plateforme', '<form id="platform-fee-form" class="form-grid"><label class="field">Pourcentage prélevé sur les nouveaux paiements<input name="platformFeePercent" type="number" min="0" max="100" step="0.01" value="' + esc(settings.platformFeePercent) + '" required></label><div class="form-actions"><button class="button primary" type="submit">Enregistrer le pourcentage</button></div></form><div class="muted" style="margin-top:12px">Le taux enregistré est figé sur chaque paiement créé. Les anciens paiements ne changent pas.</div><div class="info-box" style="margin-top:12px">Les reversements des paiements GeniusPay restent à traiter manuellement dans l’état actuel.</div>');
 }
 
 async function renderAdminUsers() {
@@ -388,6 +405,16 @@ document.addEventListener('submit', async (event) => {
   if (event.target.id === 'router-form') return createRouter(event);
   if (event.target.id === 'client-form') return createClient(event);
   if (event.target.id === 'wallet-adjustment-form') return adjustWallet(event);
+  if (event.target.id === 'platform-fee-form') {
+    event.preventDefault();
+    const platformFeePercent = Number(new FormData(event.target).get('platformFeePercent'));
+    try {
+      await request('/payments/admin/settings', { method: 'PATCH', body: JSON.stringify({ platformFeePercent }) });
+      toast('Commission enregistrée.');
+      await loadPage('settings');
+    } catch (error) { toast(error.message, true); }
+    return;
+  }
   if (event.target.id === 'portal-form') {
     event.preventDefault(); const data = Object.fromEntries(new FormData(event.target)); for (const key of Object.keys(data)) if (data[key] === '') data[key] = null;
     try { const prefix = state.role === 'ADMIN' ? '/routers' : '/routers/my'; await request(`${prefix}/${encodeURIComponent(state.selectedRouter)}/portal`, { method: 'PATCH', body: JSON.stringify(data) }); toast('Paramètres du portail enregistrés.'); }
@@ -407,6 +434,14 @@ document.addEventListener('change', async (event) => {
 
 document.addEventListener('click', async (event) => {
   const button = event.target.closest('button'); if (!button) return;
+  if (button.dataset.providerChoice) {
+    try {
+      await request('/payments/admin/settings', { method: 'PATCH', body: JSON.stringify({ preferredPaymentProvider: button.dataset.providerChoice }) });
+      toast('Fournisseur prioritaire : ' + (button.dataset.providerChoice === 'GENIUSPAY' ? 'GeniusPay' : 'SharePay') + '.');
+      await loadPage('settings');
+    } catch (error) { toast(error.message, true); }
+    return;
+  }
   if (button.id === 'show-register') return showRegistration();
   if (button.id === 'show-reset') return showPasswordReset();
   if (button.dataset.resend) return resendVerification(button);
